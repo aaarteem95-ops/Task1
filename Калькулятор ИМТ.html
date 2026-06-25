@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор ИМТ — Мониторинг здоровья</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            
+            /* Цвета категорий */
+            --underweight-color: #2563eb;
+            --underweight-bg: #eff6ff;
+            --normal-color: #16a34a;
+            --normal-bg: #f0fdf4;
+            --overweight-color: #ea580c;
+            --overweight-bg: #fff7ed;
+            
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: block;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Светлая шапка */
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            background: var(--panel-bg);
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+
+        header p {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Верхняя панель */
+        .top-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .grid-row {
+            display: table-row;
+        }
+
+        .form-panel, .pending-panel {
+            display: table-cell;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            vertical-align: top;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-panel {
+            width: 55%;
+        }
+
+        .pending-panel {
+            width: 45%;
+            border-left: 15px solid var(--bg-color);
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-color);
+            background-color: #fff;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Слот для созданной карточки */
+        .card-slot {
+            height: 140px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .slot-placeholder {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* Стили перетаскиваемой карточки */
+        .bmi-card {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 15px;
+            width: 92%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            cursor: grab;
+            user-select: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .bmi-card:active {
+            cursor: grabbing;
+        }
+
+        .bmi-card h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .bmi-card .bmi-val {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 8px;
+        }
+
+        /* Теги */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: #e2e8f0;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .tag.tag-underweight { background-color: var(--underweight-bg); color: var(--underweight-color); }
+        .tag.tag-normal { background-color: var(--normal-bg); color: var(--normal-color); }
+        .tag.tag-overweight { background-color: var(--overweight-bg); color: var(--overweight-color); }
+
+        /* Drag & Drop Зоны */
+        .zones-container {
+            display: table;
+            width: 100%;
+            margin-bottom: 25px;
+            table-layout: fixed;
+            border-spacing: 15px 0;
+        }
+
+        .zone-wrapper {
+            display: table-cell;
+        }
+
+        .drop-zone {
+            background: var(--panel-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 15px;
+            min-height: 200px;
+            border: 1px solid #e2e8f0;
+            border-top: 5px solid #ccc;
+            transition: var(--transition);
+        }
+
+        .drop-zone.zone-underweight { border-top-color: var(--underweight-color); }
+        .drop-zone.zone-normal { border-top-color: var(--normal-color); }
+        .drop-zone.zone-overweight { border-top-color: var(--overweight-color); }
+
+        .drop-zone.drag-hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            background-color: #f1f5f9;
+        }
+
+        .drop-zone h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+            color: var(--text-color);
+        }
+
+        .zone-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .zone-item {
+            font-size: 13px;
+            padding: 8px 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #ccc;
+            border-radius: 6px;
+        }
+        .zone-item.item-underweight { border-left-color: var(--underweight-color); }
+        .zone-item.item-normal { border-left-color: var(--normal-color); }
+        .zone-item.item-overweight { border-left-color: var(--overweight-color); }
+
+        /* Таблица истории */
+        .history-panel {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            border: 1px solid #e2e8f0;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-header h2 {
+            border: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        /* Таблица */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .delete-btn {
+            background: none;
+            color: #ef4444;
+            border: none;
+            padding: 2px 5px;
+            cursor: pointer;
+            font-size: 13px;
+            width: auto;
+            font-weight: normal;
+            box-shadow: none;
+        }
+        .delete-btn:hover {
+            text-decoration: underline;
+            background: none;
+            color: #dc2626;
+        }
+
+        /* Анимации */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Мониторинг здоровья</h1>
+        <p>Интерактивная система расчета и распределения индекса массы тела (ИМТ)</p>
+    </header>
+
+    <div class="top-grid">
+        <div class="grid-row">
+            <div class="form-panel">
+                <h2>Новый замер</h2>
+                <form id="bmiForm" onsubmit="generateCard(event)">
+                    <div class="form-group">
+                        <label for="studentName">ФИО / Имя ученика</label>
+                        <input type="text" id="studentName" placeholder="Например, Иван П." required>
+                    </div>
+                    <div class="form-group" style="display: inline-block; width: 48%; margin-right: 4%;">
+                        <label for="weight">Вес (кг)</label>
+                        <input type="number" id="weight" step="0.1" min="10" max="200" placeholder="65" required>
+                    </div>
+                    <div class="form-group" style="display: inline-block; width: 48%;">
+                        <label for="height">Рост (см)</label>
+                        <input type="number" id="height" min="50" max="250" placeholder="170" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customTags">Дополнительные теги (через запятую)</label>
+                        <input type="text" id="customTags" placeholder="8А, спортсмен, спецгруппа">
+                    </div>
+                    <button type="submit">Рассчитать ИМТ</button>
+                </form>
+            </div>
+
+            <div class="pending-panel">
+                <h2>Распределение замера</h2>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+                    Перетащите созданную карточку в соответствующую категорию ниже:
+                </p>
+                <div class="card-slot" id="cardSlot">
+                    <div class="slot-placeholder" id="placeholderText">
+                        Заполните форму слева и нажмите «Рассчитать»
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="zones-container">
+        <div class="zone-wrapper">
+            <div class="drop-zone zone-underweight" data-category="underweight" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event)">
+                <h3>Дефицит веса (&lt; 18.5)</h3>
+                <div class="zone-list" id="list-underweight"></div>
+            </div>
+        </div>
+        <div class="zone-wrapper">
+            <div class="drop-zone zone-normal" data-category="normal" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event)">
+                <h3>Норма (18.5 – 24.9)</h3>
+                <div class="zone-list" id="list-normal"></div>
+            </div>
+        </div>
+        <div class="zone-wrapper">
+            <div class="drop-zone zone-overweight" data-category="overweight" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="handleDrop(event)">
+                <h3>Избыток / Ожирение (&ge; 25)</h3>
+                <div class="zone-list" id="list-overweight"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="history-panel">
+        <div class="history-header">
+            <h2>Архив медицинских замеров</h2>
+            <div class="search-box">
+                <input type="text" id="searchBar" oninput="renderHistory()" placeholder="Поиск по имени или тегу (например: #8А)...">
+            </div>
+        </div>
+        
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Дата замера</th>
+                    <th>Ученик</th>
+                    <th>Рост / Вес</th>
+                    <th>ИМТ</th>
+                    <th>Теги группы</th>
+                    <th style="width: 50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('bmi_school42_data')) || [];
+    let currentPendingData = null;
+
+    window.onload = function() {
+        renderHistory();
+        renderQuickZones();
+    };
+
+    function generateCard(event) {
+        event.preventDefault();
+        
+        const name = document.getElementById('studentName').value.trim();
+        const weight = parseFloat(document.getElementById('weight').value);
+        const heightCm = parseFloat(document.getElementById('height').value);
+        const tagsInput = document.getElementById('customTags').value;
+
+        const heightM = heightCm / 100;
+        const bmi = (weight / (heightM * heightM)).toFixed(1);
+
+        let category = '';
+        let autoTag = '';
+        if (bmi < 18.5) {
+            category = 'underweight';
+            autoTag = 'дефицит';
+        } else if (bmi >= 18.5 && bmi < 25) {
+            category = 'normal';
+            autoTag = 'норма';
+        } else {
+            category = 'overweight';
+            autoTag = 'избыток';
+        }
+
+        let tags = [autoTag];
+        if (tagsInput) {
+            tagsInput.split(',').forEach(t => {
+                let cleanTag = t.trim().toLowerCase();
+                if (cleanTag && !tags.includes(cleanTag)) {
+                    tags.push(cleanTag);
+                }
+            });
+        }
+
+        currentPendingData = {
+            id: Date.now(),
+            date: new Date().toLocaleDateString('ru-RU'),
+            name: name,
+            weight: weight,
+            height: heightCm,
+            bmi: bmi,
+            category: category,
+            tags: tags
+        };
+
+        const slot = document.getElementById('cardSlot');
+        slot.innerHTML = `
+            <div class="bmi-card" id="activeBmiCard" draggable="true" ondragstart="handleDragStart(event)">
+                <h3>${currentPendingData.name}</h3>
+                <div class="bmi-val">ИМТ: ${currentPendingData.bmi}</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:5px;">Рост: ${currentPendingData.height} см | Вес: ${currentPendingData.weight} кг</div>
+                <div class="tags-container">
+                    ${currentPendingData.tags.map(t => `<span class="tag ${t === autoTag ? 'tag-' + category : ''}">#${t}</span>`).join('')}
+                </div>
+            </div>
+        `;
+        
+        slot.classList.remove('shake');
+    }
+
+    function handleDragStart(event) {
+        if (currentPendingData) {
+            event.dataTransfer.setData('text/plain', currentPendingData.category);
+        }
+    }
+
+    function allowDrop(event) {
+        event.preventDefault();
+        const zone = event.currentTarget;
+        if (!zone.classList.contains('drag-hover')) {
+            zone.classList.add('drag-hover');
+        }
+    }
+
+    function dragLeave(event) {
+        event.currentTarget.classList.remove('drag-hover');
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        const zone = event.currentTarget;
+        zone.classList.remove('drag-hover');
+
+        const correctCategory = event.dataTransfer.getData('text/plain');
+        const targetCategory = zone.getAttribute('data-category');
+
+        if (correctCategory === targetCategory && currentPendingData) {
+            db.unshift(currentPendingData);
+            saveToStorage();
+            
+            currentPendingData = null;
+            document.getElementById('cardSlot').innerHTML = `
+                <div class="slot-placeholder" id="placeholderText">Успешно распределено! Готово к новому замеру.</div>
+            `;
+            
+            document.getElementById('bmiForm').reset();
+            
+            renderHistory();
+            renderQuickZones();
+        } else {
+            const slot = document.getElementById('cardSlot');
+            slot.classList.add('shake');
+            setTimeout(() => {
+                slot.classList.remove('shake');
+            }, 400);
+        }
+    }
+
+    function renderQuickZones() {
+        const lists = {
+            underweight: document.getElementById('list-underweight'),
+            normal: document.getElementById('list-normal'),
+            overweight: document.getElementById('list-overweight')
+        };
+        
+        Object.keys(lists).forEach(key => lists[key].innerHTML = '');
+
+        db.forEach(item => {
+            if (lists[item.category]) {
+                if (lists[item.category].children.length < 3) {
+                    const div = document.createElement('div');
+                    div.className = `zone-item item-${item.category}`;
+                    div.innerHTML = `<strong>${item.name}</strong> (ИМТ: ${item.bmi})`;
+                    lists[item.category].appendChild(div);
+                }
+            }
+        });
+    }
+
+    function renderHistory() {
+        const query = document.getElementById('searchBar').value.trim().toLowerCase();
+        const tbody = document.getElementById('historyBody');
+        tbody.innerHTML = '';
+
+        db.forEach((item, index) => {
+            const matchesName = item.name.toLowerCase().includes(query);
+            const matchesTags = item.tags.some(tag => tag.toLowerCase().includes(query) || `#${tag}`.toLowerCase().includes(query));
+
+            if (!query || matchesName || matchesTags) {
+                const tr = document.createElement('tr');
+                const autoTagClass = 'tag-' + item.category;
+
+                tr.innerHTML = `
+                    <td>${item.date}</td>
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.height} см / ${item.weight} кг</td>
+                    <td><span style="font-weight:bold; color: var(--${item.category}-color)">${item.bmi}</span></td>
+                    <td>
+                        <div class="tags-container">
+                            ${item.tags.map((t, i) => `<span class="tag ${i === 0 ? autoTagClass : ''}">#${t}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td><button class="delete-btn" onclick="deleteRecord(${index})">Удалить</button></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        if (tbody.children.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding: 20px;">Записей не найдено</td></tr>`;
+        }
+    }
+
+    function deleteRecord(index) {
+        if(confirm("Вы уверены, что хотите удалить этот замер из архива?")) {
+            db.splice(index, 1);
+            saveToStorage();
+            renderHistory();
+            renderQuickZones();
+        }
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('bmi_school42_data', JSON.stringify(db));
+    }
+</script>
+
+</body>
+</html>
